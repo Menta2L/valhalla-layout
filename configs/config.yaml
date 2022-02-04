@@ -7,9 +7,11 @@ server:
     timeout: 1s
 data:
   database:
-    driver: mysql
-    source: root:root@tcp(127.0.0.1:3306)/test
+    driver: postgres
+    source: "host=127.0.0.1 port=5432 user=postgres password=changeme dbname=sms sslmode=disable"
   redis:
     addr: 127.0.0.1:6379
     read_timeout: 0.2s
     write_timeout: 0.2s
+trace:
+  endpoint: http://127.0.0.1:14268/api/traces

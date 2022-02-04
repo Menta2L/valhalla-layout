@@ -1,12 +1,17 @@
 package server
 
 import (
-	v1 "github.com/go-kratos/kratos-layout/api/helloworld/v1"
-	"github.com/go-kratos/kratos-layout/internal/conf"
-	"github.com/go-kratos/kratos-layout/internal/service"
+	"github.com/go-kratos/grpc-gateway/v2/protoc-gen-openapiv2/generator"
+	"github.com/go-kratos/kratos/contrib/registry/consul/v2"
 	"github.com/go-kratos/kratos/v2/log"
 	"github.com/go-kratos/kratos/v2/middleware/recovery"
+	"github.com/go-kratos/kratos/v2/registry"
 	"github.com/go-kratos/kratos/v2/transport/http"
+	"github.com/go-kratos/swagger-api/openapiv2"
+	consulAPI "github.com/hashicorp/consul/api"
+	v1 "github.com/menta2l/valhalla-layout/api/helloworld/v1"
+	"github.com/menta2l/valhalla-layout/internal/conf"
+	"github.com/menta2l/valhalla-layout/internal/service"
 )
 
 // NewHTTPServer new a HTTP server.
@@ -27,5 +32,23 @@ func NewHTTPServer(c *conf.Server, greeter *service.GreeterService, logger log.L
 	}
 	srv := http.NewServer(opts...)
 	v1.RegisterGreeterHTTPServer(srv, greeter)
+	h := openapiv2.NewHandler(openapiv2.WithGeneratorOptions(
+		// you can set UseJSONNamesForFields to false
+		// default is true
+		generator.UseJSONNamesForFields(true),
+	))
+	srv.HandlePrefix("/q/", h)
 	return srv
+}
+func NewRegister(conf *conf.Registry) registry.Registrar {
+	c := consulAPI.DefaultConfig()
+	c.Address = conf.Consul.Address
+	c.Scheme = conf.Consul.Scheme
+	cli, err := consulAPI.NewClient(c)
+	if err != nil {
+		panic(err)
+	}
+	r := consul.New(cli, consul.WithHealthCheck(false))
+	cli.Connect()
+	return r
 }
